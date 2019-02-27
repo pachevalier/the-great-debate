@@ -1,43 +1,68 @@
 ---
-title: "Grand débat Q160"
-author: "Paul-Antoine"
-date: "February 27, 2019"
-output: html_document
+title: "The Great Debate"
+output: 
+  flexdashboard::flex_dashboard:
+  orientation: columns
+vertical_layout: fill
+runtime: shiny
 ---
-
-
-```{r setup, include=TRUE, echo=FALSE, message=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
-library(dplyr)
-library(readr)
-library(purrr)
-library(tricky)
+  
+```{r setup, include=FALSE}    
+library(flexdashboard)
+library(tidyverse)
 library(DT)
-table_transition <- read_csv(file = "data-raw/LA_TRANSITION_ECOLOGIQUE.csv") %>%
-  set_names(nm = names(.) %>% sub(pattern = "^(Q[[:digit:]]+).*", replacement = "\\1", x = .))
-```
-
-## Q160 
-
-```{r echo=FALSE, message=FALSE}
-table_transition %>%
-  select(trashed, publishedAt, authorType, authorZipCode, starts_with('Q160')) %>%
+library(shiny)
+df <- read_csv(file = "data-raw/LA_TRANSITION_ECOLOGIQUE.csv") %>%
+  set_names(nm = names(.) %>% sub(pattern = "^(Q[[:digit:]]+).*", replacement = "\\1", x = .)) %>%
+  select(trashed, publishedAt, authorType, authorZipCode, Q160) %>%
   filter(
     is.na(Q160) == FALSE, 
     trashed == FALSE
-    ) %>% 
+    ) %>%
   mutate(
     authorType = as.factor(authorType), 
     authorZipCode = as.factor(authorZipCode)
-    ) %>%
-  datatable(
-    filter = list(position = 'top', clear = FALSE), 
-    options = list(
-    searchHighlight = TRUE,
-    search = list(regex = TRUE, caseInsensitive = FALSE, search = 'M[ae]'),
-    pageLength = 10, 
-    autoWidth = TRUE
-    )
-  ) 
+    ) 
 ```
 
+Column {data-width=200 .sidebar}
+-----------------------------------------------------------------------
+  
+```{r}
+selectInput(
+  "x_input", 
+  label = "Sélectionner un code postal",
+  choices = c("All", unique(as.character(df$authorZipCode))), 
+  selected = "All"
+  )
+
+roster_input <- reactive({
+  if (input$x_input=="All"){
+    df
+  } else {
+    df %>% 
+      filter(authorZipCode==input$x_input)}
+})
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+  
+### Chart B
+  
+```{r}
+renderDT({
+  DT::datatable(
+    roster_input(),
+    rownames = FALSE, 
+    filter = list(position = 'top', clear = FALSE), 
+    options = list(
+      searchHighlight = TRUE,
+      search = list(regex = TRUE, caseInsensitive = FALSE, search = 'M[ae]'),
+      pageLength = 10, 
+      autoWidth = TRUE
+      )
+    )
+  }
+  )
+```
