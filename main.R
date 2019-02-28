@@ -8,6 +8,26 @@ table_transition <- read_csv(file = "data-raw/LA_TRANSITION_ECOLOGIQUE.csv") %>%
 table_transition %>% glimpse()
 
 table_transition %>%
-  select(id, trashed, publishedAt, authorType, authorZipCode, starts_with('Q160')) %>%
-  filter(is.na(Q160) == FALSE)
+  select(reference, starts_with("Q")) %>%
+  gather(key = question, value = contribution, -reference) %>%
+  filter(is.na(contribution) == FALSE) 
 
+  
+table_grandeannotation <- read_csv(file = "data-raw/actions.csv") 
+table_grandeannotation %>% 
+  select(Contribution, Question, Categorie) %>%
+  mutate(Question = paste0("Q", Question)) %>%
+  distinct() %>%
+  left_join(
+    y = table_transition %>%
+      select(reference, starts_with("Q")) %>%
+      gather(key = question, value = contribution, -reference) %>%
+      filter(is.na(contribution) == FALSE),  
+    by = c(
+      "Question" = "question", 
+      "Contribution" = "reference"
+      )    
+    )
+
+
+  
